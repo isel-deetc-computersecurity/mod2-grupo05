@@ -1,0 +1,60 @@
+name: "CodeQL Scan"
+
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'warning'
+        type: choice
+        options:
+        - info
+        - warning
+        - debug
+      tags:
+        description: 'Test scenario tags'
+        required: false
+        type: boolean
+      environment:
+        description: 'Environment to run tests against'
+        type: environment
+        required: true
+  push:
+  pull_request:
+
+jobs:
+  log-the-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Log level: $LEVEL"
+          echo "Tags: $TAGS"
+          echo "Environment: $ENVIRONMENT"
+        env:
+          LEVEL: ${{ inputs.logLevel }}
+          TAGS: ${{ inputs.tags }}
+          ENVIRONMENT: ${{ inputs.environment }}
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript' ]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@5a4ac9002d0be2fb38bd78e4b4dbde5606d7042f #v2: v2.3.4 available
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-extended
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
